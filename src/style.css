@@ -94,6 +94,17 @@ h1 > span { color: var(--blue); }
 .expertise-inner > a { display: inline-flex; align-items: center; gap: 12px; color: #596070; font-size: 12px; font-weight: 500; transition: color .2s; }
 .expertise-inner > a:hover { color: var(--blue); }
 .expertise-inner > a svg { color: #8c8ca8; }
+.clients-section { padding-block: 55px; border-bottom: 1px solid var(--line); }
+.clients-inner { display: grid; grid-template-columns: .8fr 1.2fr; align-items: center; gap: 48px; }
+.clients-copy .eyebrow { color: #686e80; font-size: 9px; margin-bottom: 15px; }
+.clients-copy h2 { font-size: 32px; letter-spacing: -1.1px; margin-bottom: 14px; }
+.clients-copy > p { max-width: 270px; color: var(--muted); font-size: 12px; line-height: 1.8; }
+.clients-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 30px; list-style: none; margin: 0; padding: 0; }
+.client { display: flex; flex-direction: column; align-items: center; gap: 18px; min-width: 0; padding: 8px 16px; text-align: center; }
+.client + .client { border-left: 1px solid var(--line); }
+.client-logo { display: block; width: 140px; height: 100px; object-fit: contain; }
+.client-copy h3 { font-size: 15px; font-weight: 600; letter-spacing: -.2px; margin-bottom: 7px; }
+.client-copy p { max-width: 235px; color: var(--muted); font-size: 11px; line-height: 1.7; }
 .section { padding-block: 100px; }
 .section-heading { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 40px; gap: 35px; }
 .section-heading .eyebrow { margin-bottom: 19px; color: #686e80; }
@@ -237,25 +248,24 @@ h2 { font-size: 44px; letter-spacing: -1.9px; line-height: 1.15; font-weight: 60
 .outcome p { font-size: 12px; line-height: 1.7; }
 .dialog-cta { margin-top: 25px; width: 100%; justify-content: space-between; }
 .inquiry-form { margin-top: 24px; display: flex; flex-direction: column; gap: 16px; }
+.inquiry-fields { display: flex; flex-direction: column; gap: 16px; min-width: 0; margin: 0; padding: 0; border: 0; }
 .inquiry-form label { display: flex; flex-direction: column; gap: 8px; font-size: 11px; font-weight: 600; position: relative; }
 .inquiry-form label > span { position: absolute; top: 0; right: 0; color: var(--blue); }
 .inquiry-form label > span.optional { color: #687080; font-weight: 400; font-size: 10px; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.inquiry-form input, .inquiry-form select, .inquiry-form textarea, .email-prepared textarea { border: 1px solid #e1e3ed; border-radius: 5px; width: 100%; background: #fafbfe; color: var(--ink); padding: 12px; font-size: 12px; font-weight: 400; min-height: 42px; }
+.inquiry-form input, .inquiry-form select, .inquiry-form textarea { border: 1px solid #e1e3ed; border-radius: 5px; width: 100%; background: #fafbfe; color: var(--ink); padding: 12px; font-size: 12px; font-weight: 400; min-height: 42px; }
 .inquiry-form input::placeholder, .inquiry-form textarea::placeholder { color: #687080; }
 .inquiry-form textarea { resize: vertical; min-height: 103px; line-height: 1.7; }
 .form-submit { margin-top: 4px; justify-content: space-between; }
+.form-submit:disabled { cursor: wait; opacity: .7; transform: none; box-shadow: none; }
+.inquiry-form .form-honeypot { display: none; }
+.form-error { padding: 12px; border: 1px solid #ecc3c3; border-radius: 5px; background: #fff5f5; color: #a43333; font-size: 12px; line-height: 1.7; }
 .form-note { display: flex; gap: 8px; color: #6c7383; font-size: 10px; line-height: 1.7; font-weight: 400; }
 .form-note svg { margin-top: 1px; }
-.email-prepared { text-align: center; border-top: 1px solid var(--line); margin-top: 25px; padding-top: 25px; }
-.prepared-icon { display: inline-flex; align-items: center; justify-content: center; width: 60px; height: 60px; border-radius: 50%; color: var(--blue); background: #f0effe; margin-bottom: 16px; }
-.email-prepared h3 { font-size: 23px; font-weight: 600; letter-spacing: -.7px; }
-.email-prepared > p { font-size: 13px; color: #687080; line-height: 1.8; margin-block: 14px 22px; }
-.email-prepared strong { font-weight: 500; color: #545c72; }
-.copy-brief, .edit-brief { display: block; border: 0; background: none; font-size: 12px; color: var(--blue); margin: 18px auto 0; padding: 5px; }
-.edit-brief { color: #687080; font-size: 11px; }
-.email-prepared .copy-status { font-size: 11px; margin-block: 10px; color: #666087; }
-.email-prepared textarea { text-align: left; }
+.inquiry-success { text-align: center; border-top: 1px solid var(--line); margin-top: 25px; padding-top: 25px; }
+.success-icon { display: inline-flex; align-items: center; justify-content: center; width: 60px; height: 60px; border-radius: 50%; color: var(--blue); background: #f0effe; margin-bottom: 16px; }
+.inquiry-success h3 { font-size: 23px; font-weight: 600; letter-spacing: -.7px; }
+.inquiry-success > p { font-size: 13px; color: #687080; line-height: 1.8; margin-block: 14px 22px; }
 
 @media (min-width: 1550px) {
   .hero-grid { min-height: 630px; }
@@ -392,6 +402,17 @@ h2 { font-size: 44px; letter-spacing: -1.9px; line-height: 1.15; font-weight: 60
   .strip-intro { display: none; }
   .expertise-inner > a { font-size: 11px; gap: 10px; }
   .expertise-inner > a svg { width: 21px; height: 21px; }
+  .clients-section { padding-block: 40px; }
+  .clients-inner { grid-template-columns: 1fr; gap: 30px; }
+  .clients-copy { text-align: center; }
+  .clients-copy .eyebrow { justify-content: center; font-size: 8px; margin-bottom: 12px; }
+  .clients-copy h2 { font-size: 28px; margin-bottom: 11px; }
+  .clients-copy > p { max-width: none; font-size: 11px; }
+  .clients-list { gap: 0; }
+  .client { padding: 4px 10px; gap: 14px; }
+  .client-logo { width: 104px; height: 82px; }
+  .client-copy h3 { font-size: 14px; }
+  .client-copy p { font-size: 10px; }
   .section { padding-block: 65px; }
   .section-heading { flex-direction: column; align-items: flex-start; gap: 21px; margin-bottom: 29px; }
   .section-heading .eyebrow { font-size: 8px; letter-spacing: 1.5px; margin-bottom: 15px; }
@@ -468,7 +489,7 @@ h2 { font-size: 44px; letter-spacing: -1.9px; line-height: 1.15; font-weight: 60
   .dialog-eyebrow .eyebrow { font-size: 7px; line-height: 1.9; max-width: 220px; }
   .dialog-cta { padding-inline: 15px; font-size: 12px; gap: 12px; }
   .form-row { grid-template-columns: 1fr; gap: 16px; }
-  .inquiry-form { gap: 15px; }
+  .inquiry-form, .inquiry-fields { gap: 15px; }
   .form-note { font-size: 9px; }
 }
 

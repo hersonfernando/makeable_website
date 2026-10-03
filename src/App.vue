@@ -9,6 +9,10 @@ const navigation = [
   { label: 'Our approach', href: '#approach' },
   { label: 'About us', href: '#about' },
 ]
+const clients = [
+  { name: 'DOST-IX', fullName: 'Department of Science and Technology — Region IX', logo: '/clients/dost-ix.svg', width: 100, height: 100 },
+  { name: 'NCMB 9', fullName: 'National Conciliation and Mediation Board — Region IX', logo: '/clients/ncmb-9.png', width: 183, height: 151 },
+]
 const services = [
   {
     id: 'cloud', number: '01', icon: 'cloud', title: 'Cloud solutions',
@@ -60,10 +64,11 @@ const process = [
 const menuOpen = ref(false)
 const dialogRef = ref(null)
 const dialogContent = ref(null)
-const emailPrepared = ref(false)
-const copyStatus = ref('')
-const form = ref({ name: '', email: '', company: '', service: '', message: '' })
-const contactEmail = import.meta.env.VITE_CONTACT_EMAIL || 'hello@makeable.io'
+const inquirySent = ref(false)
+const isSending = ref(false)
+const submitError = ref('')
+const emptyInquiry = () => ({ name: '', email: '', company: '', service: '', message: '', website: '' })
+const form = ref(emptyInquiry())
 let previousFocus = null
 
 function closeMenu() { menuOpen.value = false }
@@ -72,8 +77,10 @@ async function showDialog(content) {
   closeMenu()
   if (!dialogRef.value.open) previousFocus = document.activeElement
   dialogContent.value = content
-  emailPrepared.value = false
-  copyStatus.value = ''
+  if (!isSending.value) {
+    inquirySent.value = false
+    submitError.value = ''
+  }
   await nextTick()
   if (!dialogRef.value.open) dialogRef.value.showModal()
   document.body.style.overflow = 'hidden'
@@ -96,30 +103,35 @@ function onBackdropClick(event) {
   const bounds = dialogRef.value.getBoundingClientRect()
   if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) closeDialog()
 }
-const projectBrief = computed(() => [
-  `Hi Makeable.IO Information Technology Solutions,`, '', 'I would like to discuss a project.', '',
-  `Name: ${form.value.name.trim()}`, `Email: ${form.value.email.trim()}`,
-  ...(form.value.company.trim() ? [`Company: ${form.value.company.trim()}`] : []),
-  `Interested in: ${services.find(service => service.id === form.value.service)?.title || 'Help choosing the right solution'}`,
-  '', 'Project brief:', form.value.message.trim(),
-].join('\n'))
-const emailLink = computed(() => `mailto:${contactEmail}?subject=${encodeURIComponent(`Project inquiry${form.value.company.trim() ? ` — ${form.value.company.trim()}` : ''}`)}&body=${encodeURIComponent(projectBrief.value)}`)
-function prepareEmail(event) {
+async function sendInquiry(event) {
+  if (isSending.value) return
   if (form.value.message.trim().length < 15) {
     const messageField = event.target.elements.message
     messageField.setCustomValidity('Please describe your project in at least 15 characters.')
     messageField.reportValidity()
     return
   }
-  window.location.href = emailLink.value
-  emailPrepared.value = true
-}
-async function copyBrief() {
+  submitError.value = ''
+  isSending.value = true
   try {
-    await navigator.clipboard.writeText(projectBrief.value)
-    copyStatus.value = 'Project brief copied.'
+    const response = await fetch('/api/contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(form.value),
+    })
+    const result = await response.json().catch(() => null)
+    if (!response.ok || result?.sent !== true) {
+      submitError.value = result?.error || 'We couldn’t send your inquiry. Please try again.'
+      return
+    }
+    inquirySent.value = true
+    form.value = emptyInquiry()
+    await nextTick()
+    dialogRef.value?.querySelector('.inquiry-success')?.focus()
   } catch {
-    copyStatus.value = 'Select and copy the project brief below.'
+    submitError.value = 'We couldn’t reach the server. Please check your connection and try again.'
+  } finally {
+    isSending.value = false
   }
 }
 onBeforeUnmount(() => { document.body.style.overflow = '' })
@@ -166,6 +178,22 @@ onBeforeUnmount(() => { document.body.style.overflow = '' })
         <a v-for="service in services" :key="service.id" href="#services"><Icon :name="service.icon" :size="23" /><span>{{ service.title }}</span></a>
       </div>
     </div>
+
+    <section id="clients" class="clients-section" aria-labelledby="clients-title">
+      <div class="container clients-inner">
+        <div class="clients-copy">
+          <div class="eyebrow"><span class="tiny-square"></span> BUILT ON TRUST</div>
+          <h2 id="clients-title">Our clients.</h2>
+          <p>Technology partnerships that make things possible.</p>
+        </div>
+        <ul class="clients-list">
+          <li v-for="client in clients" :key="client.name" class="client">
+            <img class="client-logo" :src="client.logo" :alt="`${client.name} logo`" :width="client.width" :height="client.height" loading="lazy" decoding="async" />
+            <div class="client-copy"><h3>{{ client.name }}</h3><p>{{ client.fullName }}</p></div>
+          </li>
+        </ul>
+      </div>
+    </section>
 
     <section id="services" class="section services-section">
       <div class="container">
@@ -253,14 +281,19 @@ onBeforeUnmount(() => { document.body.style.overflow = '' })
     </template>
     <template v-else-if="dialogContent?.kind === 'inquiry'">
       <div class="eyebrow"><span class="tiny-square"></span> LET’S BUILD SOMETHING</div><h2 id="inquiry-dialog-title">What do you have in mind?</h2><p class="dialog-description">Tell us a little about yourself and your idea. Big or small, we’re ready to explore it with you.</p>
-      <form v-if="!emailPrepared" class="inquiry-form" @submit.prevent="prepareEmail">
+      <form v-if="!inquirySent" class="inquiry-form" :aria-busy="isSending" @submit.prevent="sendInquiry">
+        <fieldset class="inquiry-fields" :disabled="isSending">
         <div class="form-row"><label>Your name <span>*</span><input v-model="form.name" name="name" autocomplete="name" placeholder="Alex Santos" required maxlength="100" pattern=".*\S.*" /></label><label>Email address <span>*</span><input v-model="form.email" name="email" type="email" autocomplete="email" placeholder="alex@company.com" required maxlength="254" /></label></div>
         <label>Company <span class="optional">(optional)</span><input v-model="form.company" name="company" autocomplete="organization" placeholder="Your company name" maxlength="150" /></label>
         <label>What can we help with? <span>*</span><select v-model="form.service" name="service" required><option disabled value="">Select a service</option><option v-for="service in services" :key="service.id" :value="service.id">{{ service.title }}</option><option value="unsure">I’d like help figuring it out</option></select></label>
         <label>A little about your project <span>*</span><textarea v-model="form.message" name="message" rows="4" placeholder="What would you like to build, improve, or solve?" required minlength="15" maxlength="2000" @input="event => event.target.setCustomValidity('')"></textarea></label>
-        <button class="button form-submit" type="submit">Open email app <Icon name="arrow-up" :size="19" /></button><p class="form-note"><Icon name="mail" :size="15" /> We’ll prepare an email with your brief. You review it and press send in your email app.</p>
+        <label class="form-honeypot" aria-hidden="true">Website<input v-model="form.website" name="website" tabindex="-1" autocomplete="off" /></label>
+        <button class="button form-submit" type="submit">{{ isSending ? 'Sending…' : 'Send inquiry' }} <Icon name="arrow-up" :size="19" /></button>
+        </fieldset>
+        <p v-if="submitError" class="form-error" role="alert">{{ submitError }}</p>
+        <p class="form-note"><Icon name="mail" :size="15" /> Your inquiry goes straight to our team. We’ll reply to the email address you provided.</p>
       </form>
-      <div v-else class="email-prepared" role="status"><span class="prepared-icon"><Icon name="mail" :size="28" /></span><h3>Your brief is ready.</h3><p>Complete your inquiry by sending the prepared email to <strong>{{ contactEmail }}</strong> in your email app.</p><a :href="emailLink" class="button">Open email again <Icon name="arrow-up" :size="18" /></a><button class="copy-brief" @click="copyBrief">Copy project brief</button><p v-if="copyStatus" class="copy-status" aria-live="polite">{{ copyStatus }}</p><textarea v-if="copyStatus.startsWith('Select')" :value="projectBrief" readonly rows="8" aria-label="Project brief to copy"></textarea><button class="edit-brief" @click="emailPrepared = false">← Back to your brief</button></div>
+      <div v-else class="inquiry-success" role="status" tabindex="-1"><span class="success-icon"><Icon name="check" :size="28" /></span><h3>Your inquiry has been sent.</h3><p>Thanks for telling us about your project. Our team will get back to you at the email address you provided.</p><button class="button" @click="closeDialog">Done <Icon name="check" :size="18" /></button></div>
     </template>
   </dialog>
 </template>
