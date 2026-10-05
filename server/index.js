@@ -2,7 +2,6 @@ import 'dotenv/config'
 import express from 'express'
 import { existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { createContactHandler } from './contact.js'
 
 const distDirectory = fileURLToPath(new URL('../dist/', import.meta.url))
 if (!existsSync(`${distDirectory}/index.html`)) {
@@ -12,7 +11,6 @@ if (!existsSync(`${distDirectory}/index.html`)) {
 
 const app = express()
 app.disable('x-powered-by')
-app.use(createContactHandler())
 app.use('/api', (req, res) => res.status(404).json({ error: 'Endpoint not found.' }))
 app.use(express.static(distDirectory))
 app.get('/{*path}', (req, res) => res.sendFile(`${distDirectory}/index.html`))

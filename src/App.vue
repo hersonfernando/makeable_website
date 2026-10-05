@@ -64,11 +64,11 @@ const process = [
 const menuOpen = ref(false)
 const dialogRef = ref(null)
 const dialogContent = ref(null)
-const inquirySent = ref(false)
-const isSending = ref(false)
-const submitError = ref('')
-const emptyInquiry = () => ({ name: '', email: '', company: '', service: '', message: '', website: '' })
-const form = ref(emptyInquiry())
+const contactEmail = import.meta.env.VITE_CONTACT_EMAIL?.trim() || 'makeable.io@gmail.com'
+const emailPrepared = ref(false)
+const preparedEmail = ref('')
+const gmailComposeUrl = computed(() => `https://mail.google.com/mail/?extsrc=mailto&url=${encodeURIComponent(preparedEmail.value)}`)
+const form = ref({ name: '', email: '', company: '', service: '', message: '' })
 let previousFocus = null
 
 function closeMenu() { menuOpen.value = false }
@@ -77,10 +77,7 @@ async function showDialog(content) {
   closeMenu()
   if (!dialogRef.value.open) previousFocus = document.activeElement
   dialogContent.value = content
-  if (!isSending.value) {
-    inquirySent.value = false
-    submitError.value = ''
-  }
+  emailPrepared.value = false
   await nextTick()
   if (!dialogRef.value.open) dialogRef.value.showModal()
   document.body.style.overflow = 'hidden'
@@ -103,36 +100,37 @@ function onBackdropClick(event) {
   const bounds = dialogRef.value.getBoundingClientRect()
   if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) closeDialog()
 }
-async function sendInquiry(event) {
-  if (isSending.value) return
+async function openInquiryEmail(event) {
   if (form.value.message.trim().length < 15) {
     const messageField = event.target.elements.message
     messageField.setCustomValidity('Please describe your project in at least 15 characters.')
     messageField.reportValidity()
     return
   }
-  submitError.value = ''
-  isSending.value = true
-  try {
-    const response = await fetch('/api/contact', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form.value),
-    })
-    const result = await response.json().catch(() => null)
-    if (!response.ok || result?.sent !== true) {
-      submitError.value = result?.error || 'We couldn’t send your inquiry. Please try again.'
-      return
-    }
-    inquirySent.value = true
-    form.value = emptyInquiry()
-    await nextTick()
-    dialogRef.value?.querySelector('.inquiry-success')?.focus()
-  } catch {
-    submitError.value = 'We couldn’t reach the server. Please check your connection and try again.'
-  } finally {
-    isSending.value = false
+  const inquiry = Object.fromEntries(Object.entries(form.value).map(([field, value]) => [field, value.trim()]))
+  const serviceName = services.find(service => service.id === inquiry.service)?.title || 'Help choosing the right solution'
+  const subject = `Project inquiry${inquiry.company ? ` — ${inquiry.company}` : ''}`
+  const body = [
+    'Project inquiry from the Makeable.IO website', '',
+    `Name: ${inquiry.name}`, `Email: ${inquiry.email}`,
+    `Company: ${inquiry.company || 'Not provided'}`,
+    `Interested in: ${serviceName}`, '',
+    'Project brief:', inquiry.message.replace(/\r?\n/g, '\r\n'),
+  ].join('\r\n')
+  preparedEmail.value = `mailto:${contactEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+  if (event.submitter?.value === 'gmail') {
+    window.open(gmailComposeUrl.value, '_blank', 'noopener,noreferrer')
+  } else {
+    window.location.href = preparedEmail.value
   }
+  emailPrepared.value = true
+  await nextTick()
+  dialogRef.value?.querySelector('.email-prepared')?.focus()
+}
+async function editInquiry() {
+  emailPrepared.value = false
+  await nextTick()
+  dialogRef.value?.querySelector('input')?.focus()
 }
 onBeforeUnmount(() => { document.body.style.overflow = '' })
 </script>
@@ -281,19 +279,18 @@ onBeforeUnmount(() => { document.body.style.overflow = '' })
     </template>
     <template v-else-if="dialogContent?.kind === 'inquiry'">
       <div class="eyebrow"><span class="tiny-square"></span> LET’S BUILD SOMETHING</div><h2 id="inquiry-dialog-title">What do you have in mind?</h2><p class="dialog-description">Tell us a little about yourself and your idea. Big or small, we’re ready to explore it with you.</p>
-      <form v-if="!inquirySent" class="inquiry-form" :aria-busy="isSending" @submit.prevent="sendInquiry">
-        <fieldset class="inquiry-fields" :disabled="isSending">
+      <form v-if="!emailPrepared" class="inquiry-form" @submit.prevent="openInquiryEmail">
+        <fieldset class="inquiry-fields">
         <div class="form-row"><label>Your name <span>*</span><input v-model="form.name" name="name" autocomplete="name" placeholder="Alex Santos" required maxlength="100" pattern=".*\S.*" /></label><label>Email address <span>*</span><input v-model="form.email" name="email" type="email" autocomplete="email" placeholder="alex@company.com" required maxlength="254" /></label></div>
         <label>Company <span class="optional">(optional)</span><input v-model="form.company" name="company" autocomplete="organization" placeholder="Your company name" maxlength="150" /></label>
         <label>What can we help with? <span>*</span><select v-model="form.service" name="service" required><option disabled value="">Select a service</option><option v-for="service in services" :key="service.id" :value="service.id">{{ service.title }}</option><option value="unsure">I’d like help figuring it out</option></select></label>
         <label>A little about your project <span>*</span><textarea v-model="form.message" name="message" rows="4" placeholder="What would you like to build, improve, or solve?" required minlength="15" maxlength="2000" @input="event => event.target.setCustomValidity('')"></textarea></label>
-        <label class="form-honeypot" aria-hidden="true">Website<input v-model="form.website" name="website" tabindex="-1" autocomplete="off" /></label>
-        <button class="button form-submit" type="submit">{{ isSending ? 'Sending…' : 'Send inquiry' }} <Icon name="arrow-up" :size="19" /></button>
+        <button class="button form-submit" type="submit">Open email app <Icon name="mail" :size="19" /></button>
+        <button class="text-link form-gmail" type="submit" value="gmail">Open in Gmail <Icon name="arrow-up" :size="18" /></button>
         </fieldset>
-        <p v-if="submitError" class="form-error" role="alert">{{ submitError }}</p>
-        <p class="form-note"><Icon name="mail" :size="15" /> Your inquiry goes straight to our team. We’ll reply to the email address you provided.</p>
+        <p class="form-note"><Icon name="mail" :size="15" /> Choose your email app or Gmail to review your inquiry, then press Send there.</p>
       </form>
-      <div v-else class="inquiry-success" role="status" tabindex="-1"><span class="success-icon"><Icon name="check" :size="28" /></span><h3>Your inquiry has been sent.</h3><p>Thanks for telling us about your project. Our team will get back to you at the email address you provided.</p><button class="button" @click="closeDialog">Done <Icon name="check" :size="18" /></button></div>
+      <div v-else class="email-prepared" role="status" tabindex="-1"><span class="email-icon"><Icon name="mail" :size="28" /></span><h3>Finish sending your inquiry.</h3><p>A new message to {{ contactEmail }} should open with your details. If your email app didn’t open, choose Open in Gmail below. Review the message and press Send in the email editor.</p><div class="email-actions"><a class="button" :href="gmailComposeUrl" target="_blank" rel="noopener noreferrer">Open in Gmail <Icon name="arrow-up" :size="18" /></a><a class="text-link" :href="preparedEmail">Open email again <Icon name="mail" :size="18" /></a><button class="text-link" @click="editInquiry">Back to your brief <Icon name="arrow" :size="18" /></button></div></div>
     </template>
   </dialog>
 </template>

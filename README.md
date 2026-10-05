@@ -45,19 +45,17 @@ npm run build
 npm start
 ```
 
-Deploy the project to a host that runs Node.js 20.19 or newer. Install dependencies, build the website, configure the SMTP environment variables, and run `npm start`. The server serves `dist` and handles `/api/contact` on the same origin. A static-only deployment cannot deliver inquiries. `npm run preview` also supports the contact endpoint for local build checks.
+Install dependencies, build the website, and deploy the `dist` folder to a static host. Alternatively, use a host that runs Node.js 20.19 or newer and run `npm start` to serve `dist`. Use `npm run preview` for local build checks.
 
-Set `PORT` and `HOST` for your host as needed. If you run behind a reverse proxy, set `TRUST_PROXY_HOPS` to the number of trusted proxy hops so the inquiry rate limit can distinguish visitors. The default trusts no proxy headers. The rate limit is held in memory per server process; use shared rate limiting when running multiple instances.
+Set `PORT` and `HOST` for your host as needed when using `npm start`.
 
 ## Contact configuration
 
-The inquiry form sends directly to `makeable.io@gmail.com` by default, without opening the visitor's email application. Copy `.env.example` to `.env` and set `SMTP_PASS` to the sending account's [Google app password](https://support.google.com/accounts/answer/185833). App passwords require 2-Step Verification. Restart the development or production server after changing SMTP settings. Keep `.env` private; it is ignored by Git.
+The inquiry form lets visitors open their default email app using a `mailto:` link or choose “Open in Gmail” to open Gmail in a new browser tab, addressed to `makeable.io@gmail.com`. Both options include their name, email address, optional company, selected service, and project description in the subject and message. The visitor reviews the draft and sends it from their email account.
 
-To use another SMTP provider, configure `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, and `SMTP_FROM` with that provider's settings. `SMTP_FROM` must be a permitted sender email address. Use `SMTP_SECURE=true` for port 465; for port 587, use `false` (STARTTLS is required). Set `CONTACT_EMAIL` to change the receiving inbox. Existing `VITE_CONTACT_EMAIL` configurations are still accepted as a fallback, but SMTP credentials must never use a `VITE_` prefix.
+To change the recipient, set `VITE_CONTACT_EMAIL` in `.env`, then restart the development server or rebuild for production. This address is public in the website's client code. No SMTP settings or email delivery server are required.
 
-The endpoint validates and limits submissions, includes all project details in the email, and sets Reply-To to the visitor's address. The form shows confirmation only after SMTP accepts the receiving address. SMTP acceptance does not guarantee inbox placement. If sending fails or SMTP is not configured, the form keeps the visitor's details and shows an error so they can retry. Submissions are not stored in a database.
-
-Run `npm test` for contact delivery, validation, failure, and rate-limit checks.
+The form validates the required fields before preparing a draft. It keeps the visitor's details so they can edit their brief or use “Open email again.” The email app option needs a configured default email app or browser mail handler. The Gmail option uses [Google's documented mailto handler](https://developer.chrome.com/blog/getting-gmail-to-handle-all-mailto-links-with-registerprotocolhandler/) and requires signing in to Gmail if needed. Drafts belong to the account the visitor sends from; `makeable.io@gmail.com` is the recipient. The website does not send or store submissions and cannot confirm that an email was sent.
 
 ## Content and styling
 
